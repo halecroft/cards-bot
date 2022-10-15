@@ -1,3 +1,5 @@
+#Command structure based off basic discord.py application commands framework shown in basic.py in the discord.py github
+
 from typing import Optional
 import random
 from webbrowser import Galeon
@@ -5,7 +7,7 @@ from webbrowser import Galeon
 import discord
 from discord import app_commands, ui
 
-GUILD_ID_LIST = [1022006302471372850]
+GUILD_ID_LIST = [1022006302471372850] #Testing server, TODO make dynamic
 MY_GUILDS = []
 
 for guild_id in GUILD_ID_LIST:
@@ -15,6 +17,7 @@ for guild_id in GUILD_ID_LIST:
 class MyClient(discord.Client):
     def __init__(self, *, intents: discord.Intents):
         super().__init__(intents=intents)
+        # Documentation from the example bot:
         # A CommandTree is a special type that holds all the application command
         # state required to make it work. This is a separate class because it
         # allows all the extra state to be opt-in.
@@ -24,6 +27,7 @@ class MyClient(discord.Client):
         # maintain its own tree instead.
         self.tree = app_commands.CommandTree(self)
 
+    # Documentation from the example bot:
     # In this basic example, we just synchronize the app commands to one guild.
     # Instead of specifying a guild to every command, we copy over our global commands instead.
     # By doing so, we don't have to wait up to an hour until they are shown to the end-user.
@@ -33,28 +37,29 @@ class MyClient(discord.Client):
             self.tree.copy_global_to(guild=guild_item)
             await self.tree.sync(guild=guild_item)
 
+#List of in-progress games
 openGames = []
 
-
+#Game instance object, standard template for all games
 class GameInstance():
     nextGameID = 0
 
     def __init__(self, startingInteraction, gameShortName):
         if gameShortName == "cah":
-            self.game = cahInstance(self)
+            self.game = cahInstance(self) #Maybe switch this to using inheritance?
         
         self.startingInteraction = startingInteraction
         self.players = []
         self.startingPlayer = startingInteraction.user
         self.id = GameInstance.nextGameID
-        GameInstance.nextGameID += 1
+        GameInstance.nextGameID += 1 #Incremental ID counter
 
         self.players.append(Player(startingInteraction.user))
         self.status = "OPEN" #OPEN, IN PROGRESS OPEN, IN PROGRESS FULL, CLOSED
 
     def addPlayer(self, player):
         newPlayer = Player(player, self)
-        self.game.addPlayer(newPlayer)
+        self.game.addPlayer(newPlayer) #Calls the specific game's addPlayer method
         self.players.append(newPlayer)
 
 class Player():
@@ -67,7 +72,7 @@ class Player():
 
         self.gameInstance = gameInstance
 
-        gameInstance.game.addPlayer(self)
+        gameInstance.game.addPlayer(self) #Specific game objects will add attributes directly to the player object
 
 class cahSettings(ui.view):
     def __init__(self, cahInstance) -> None:
@@ -75,11 +80,13 @@ class cahSettings(ui.view):
         self.cahInstance = cahInstance
         self.add_item(cahDeckSelect(self.cahInstance))
 
+        #TODO Figure out the settings/init modals/messages
+
         #@ui.button(label="Start", style=discord.ButtonStyle.green, custom_id="start_button")
             
         #@ui.button(label="Cancel", style=discord.ButtonStyle.red, custom_id="cancel_button")
 
-class cahDeckSelect(ui.Select):
+class cahDeckSelect(ui.Select): #Deck select option for Cards Against Humanity games
     def __init__(self, cahInstance):
         self.cahInstance = cahInstance
         options=[
@@ -90,18 +97,18 @@ class cahDeckSelect(ui.Select):
     async def callback(self, interaction: discord.Interaction):
         self.cahInstance.deckName = self.values[0]
 
-class cahBlackCard():
+class cahBlackCard(): #Black cards have to be objects due to some of them being "Pick 2"s. White cards are just strings
     def __init__(self, pickNum, text):
         self.text = text
         self.pickNum = pickNum
 
-class cahInstance():
+class cahInstance(): #Cards Against Humanity game instance
     gameName = "Cards Against Humanity"
     shortName = "cah"
     maxPlayers = 8
     minPlayers = 3
     handSize = 7
-    deckList = ["US", "Thundadeck"]
+    deckList = ["US", "Thundadeck"] #TODO Make deck list dynamic
 
     def __init__(self, gameInstance):
         self.gameInstance = gameInstance
@@ -113,7 +120,7 @@ class cahInstance():
         #TODO Config: Select Deck
         self.deckName = ""
 
-        whiteCardDoc = open("Games/cah/decks/" + self.deckName + " White Cards.txt", "r")
+        whiteCardDoc = open("Games/cah/decks/" + self.deckName + " White Cards.txt", "r") #White and black cards are stored in .txt files
         for cardText in whiteCardDoc:
             self.whiteDrawDeck.append(cardText)
         whiteCardDoc.close()
@@ -126,10 +133,10 @@ class cahInstance():
         blackCardDoc.close()
         random.shuffle(self.blackDrawDeck)
 
-    def addPlayer(self, player):
+    def addPlayer(self, player): 
         player.hand = []
         player.blackCardCount = 0
-        player.gameInstance.game.buildHand(self)
+        #player.gameInstance.game.buildHand(self)
         for i in range(self.handSize):
             player.hand.append(self.whiteDrawDeck.pop(0))
 
@@ -147,6 +154,7 @@ async def on_ready():
     print(f'Logged in as {client.user} (ID: {client.user.id})')
     print('------')
 
+#Play game app command
 @client.tree.command()
 @app_commands.rename(gameName="game")
 @app_commands.describe(gameName="Which game you want to play")
